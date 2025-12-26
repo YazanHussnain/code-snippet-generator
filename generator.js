@@ -13,6 +13,19 @@ function parseLineRanges(text) {
   
     return set;
   }
+
+  function applyIndent(line, indentSize) {
+    // Count leading spaces/tabs in original line
+    const match = line.match(/^\s*/);
+    const leading = match ? match[0].length : 0;
+  
+    // Compute how many spaces for new indentation
+    const newIndent = ' '.repeat(Math.floor(leading / 2) * indentSize);
+    
+    // Remove original leading spaces and prepend newIndent
+    return newIndent + line.trimStart();
+  }
+  
   
   function escapeHTML(str) {
     return str
@@ -58,6 +71,7 @@ function parseLineRanges(text) {
   document.addEventListener("DOMContentLoaded", () => {
     const editor = document.getElementById("codeInput");
     const lineNumbers = document.getElementById("lineNumbers");
+      
   
     function updateLineNumbers() {
       const lines = editor.innerText.split("\n").length;
@@ -72,35 +86,111 @@ function parseLineRanges(text) {
     editor.addEventListener("scroll", () => {
       lineNumbers.scrollTop = editor.scrollTop;
     });
+    
   
-    updateLineNumbers();
+    updateLineNumbers();    
+
+    editor.addEventListener("keydown", function(e) {
+        if (e.key !== "Tab") return; // Only handle Tab / Shift+Tab
+        e.preventDefault();
+      
+        const indentSize = parseInt(document.getElementById("indentSelect").value, 10);
+        const indentStr = ' '.repeat(indentSize);
+      
+        const sel = window.getSelection();
+        if (!sel.rangeCount) return;
+      
+        const range = sel.getRangeAt(0);
+        let selectedText = sel.toString();
+      
+        // Check if multi-line selection exists
+        const isMultiLine = selectedText.includes("\n");
+      
+        if (isMultiLine || selectedText) {
+          // Multi-line selection → process all lines
+          const lines = selectedText.split("\n");
+          let processedLines;
+      
+          if (e.shiftKey) {
+            processedLines = lines.map(line => {
+              const match = line.match(/^(\s+)/);
+              if (match) {
+                const removeSpaces = Math.min(indentSize, match[1].length);
+                return line.slice(removeSpaces);
+              }
+              return line;
+            });
+          } else {
+            processedLines = lines.map(line => indentStr + line);
+          }
+      
+          document.execCommand('insertText', false, processedLines.join("\n"));
+          return;
+        }
+      
+        // Single line, no selection → operate directly on line node
+        let lineNode = range.startContainer;
+        while (lineNode && lineNode !== editor && lineNode.nodeName !== "DIV") {
+          lineNode = lineNode.parentNode;
+        }
+        if (!lineNode) return;
+      
+        let lineText = lineNode.innerText;
+      
+        if (e.shiftKey) {
+          // Unindent
+          const match = lineText.match(/^(\s+)/);
+          if (match) {
+            const removeSpaces = Math.min(indentSize, match[1].length);
+            lineNode.innerText = lineText.slice(removeSpaces);
+      
+            // Set caret at correct position
+            const newRange = document.createRange();
+            newRange.setStart(lineNode.firstChild || lineNode, 0);
+            sel.removeAllRanges();
+            sel.addRange(newRange);
+          }
+        } else {
+          // Indent
+          lineNode.innerText = indentStr + lineText;
+      
+          const newRange = document.createRange();
+          newRange.setStart(lineNode.firstChild || lineNode, indentStr.length);
+          sel.removeAllRanges();
+          sel.addRange(newRange);
+        }
+    });
   
     /* Existing generator logic */
     window.generateSnippet = function () {
-      const code = editor.innerText.split("\n");
-      const lang = document.getElementById("language").value;
-      const boldLines = parseLineRanges(
-        document.getElementById("highlightLines").value
-      );
-  
-      let html = '<table class="code-table">';
-  
-      code.forEach((line, i) => {
-        const ln = i + 1;
-        const cls = boldLines.has(ln)
-          ? "code-line ref"
-          : "code-line";
-  
-        html += `
-          <tr>
-            <td class="code-ln">${ln}</td>
-            <td class="${cls}">${highlight(line, lang)}</td>
-          </tr>`;
-      });
-  
-      html += "</table>";
-      document.getElementById("output").innerHTML = html;
-    };
+        const code = editor.innerText.split("\n");
+        const lang = document.getElementById("language").value;
+        const boldLines = parseLineRanges(document.getElementById("highlightLines").value);
+        const indentSize = parseInt(document.getElementById("indentSelect").value, 10);
+      
+        let html = '<table class="code-table">';
+      
+        code.forEach((line, i) => {
+          const ln = i + 1;
+          const cls = boldLines.has(ln) ? "code-line ref" : "code-line";
+      
+          // Apply indentation
+          const indentedLine = applyIndent(line, indentSize);
+      
+          // Apply syntax highlighting
+          const highlightedLine = highlight(indentedLine, lang);
+      
+          html += `
+            <tr>
+              <td class="code-ln">${ln}</td>
+              <td class="${cls}">${highlightedLine}</td>
+            </tr>`;
+        });
+      
+        html += "</table>";
+        document.getElementById("output").innerHTML = html;
+      };
+      
   });
   
   
