@@ -14,28 +14,46 @@ function parseLineRanges(text) {
     return set;
   }
   
+  function escapeHTML(str) {
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+  
   function highlight(line, lang) {
+    // Escape HTML first
+    line = escapeHTML(line);
+  
     if (lang === 'c') {
-      return line
-        .replace(/(\/\/.*)/g, '<span class="cmt">$1</span>')
-        .replace(/("(?:\\.|[^"])*")/g, '<span class="str">$1</span>')
-        .replace(/\b(int|void|struct|return|if|else|for|while|const|uint64_t)\b/g,
-                 '<span class="kw">$1</span>')
-        .replace(/\b([a-zA-Z_]\w*)(?=\()/g, '<span class="fn">$1</span>')
-        .replace(/\b(\d+)\b/g, '<span class="num">$1</span>');
+      // comments
+      line = line.replace(/(\/\/.*)/g, '<span class="cmt">$1</span>');
+      // strings (double quotes)
+      line = line.replace(/(&quot;(?:\\.|[^&])*?&quot;)/g, '<span class="str">$1</span>');
+      // keywords
+      line = line.replace(/\b(int|void|struct|return|if|else|for|while|const|uint64_t)\b/g, '<span class="kw">$1</span>');
+      // function names
+      line = line.replace(/\b([a-zA-Z_]\w*)(?=\()/g, '<span class="fn">$1</span>');
+      // numbers
+      line = line.replace(/\b(\d+)\b/g, '<span class="num">$1</span>');
     }
   
     if (lang === 'py') {
-      return line
-        .replace(/(#.*)/g, '<span class="cmt">$1</span>')
-        .replace(/("(?:\\.|[^"])*")/g, '<span class="str">$1</span>')
-        .replace(/\b(def|return|if|else|for|while|class|import|from)\b/g,
-                 '<span class="kw">$1</span>')
-        .replace(/\b(\d+)\b/g, '<span class="num">$1</span>');
+      // comments
+      line = line.replace(/(#.*)/g, '<span class="cmt">$1</span>');
+      // strings
+      line = line.replace(/(&quot;(?:\\.|[^&])*?&quot;)/g, '<span class="str">$1</span>');
+      // keywords
+      line = line.replace(/\b(def|return|if|else|for|while|class|import|from)\b/g, '<span class="kw">$1</span>');
+      // numbers
+      line = line.replace(/\b(\d+)\b/g, '<span class="num">$1</span>');
     }
   
     return line;
   }
+  
 
   document.addEventListener("DOMContentLoaded", () => {
     const editor = document.getElementById("codeInput");
