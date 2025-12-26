@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Email Code Snippet Generator</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.cdnfonts.com/css/cascadia-code" rel="stylesheet">
+</head>
+
+<body>
+  <h1>Email Code Snippet Generator</h1>
+
+  <p class="desc">
+    Generate line-numbered, syntax-highlighted code snippets
+    that can be safely pasted into emails.
+  </p>
+
+  <div class="editor-wrapper">
+    <div id="lineNumbers" class="line-numbers"></div>
+  
+    <div
+      id="codeInput"
+      class="code-editor"
+      contenteditable="true"
+      spellcheck="false"
+      placeholder="Paste your C/C++ or Python code here..."
+    ></div>
+  </div>
+  
+
+  <div class="controls">
+    <select id="language">
+      <option value="c">C / C++</option>
+      <option value="py">Python</option>
+    </select>
+
+    <input
+      id="highlightLines"
+      placeholder="Bold lines (e.g. 3,7,10-12)"
+    />
+
+    <button onclick="generateSnippet()">Generate</button>
+    <button onclick="copySnippet()">Copy HTML</button>
+  </div>
+
+  <h2>Preview</h2>
+  <div id="output" class="preview"></div>
+
+  <script src="generator.js"></script>
+</body>
+</html>
